@@ -1,4 +1,5 @@
-﻿using Aura.Api.Models;
+﻿using Aura.Api.Data;
+using Aura.Api.Models;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -7,10 +8,15 @@ using System.Text;
 
 public class UserService
 {
-    private static List<User> _users = new List<User>();
+    private readonly AppDbContext _context;
 
-    //Servicies
-    public void Register(string email, string password)
+    public UserService(AppDbContext context)
+    {
+        _context = context;
+    }
+
+    //Services
+    public async Task RegisterAsync(string email, string password)
     {
         //Defensive validation
         if (string.IsNullOrWhiteSpace(email))
@@ -22,7 +28,7 @@ public class UserService
         email = NormalizeEmail(email);
 
         //Check if user already exists
-        if (_users.Any(u => u.Email == email))
+        if (_context.Users.Any(u => u.Email == email))
         {
             throw new InvalidOperationException("User already exists");
         }
@@ -38,10 +44,11 @@ public class UserService
         };
 
         //Save
-        _users.Add(user);
+        _context.Users.Add(user);
+        await _context.SaveChangesAsync();
     }
 
-    public string Login(string email, string password)
+    public async Task<string> LoginAsync(string email, string password)
     {
         //Defensive validation
         if (string.IsNullOrWhiteSpace(email))
@@ -52,7 +59,7 @@ public class UserService
 
         email = NormalizeEmail(email);
 
-        var user = _users.FirstOrDefault(u => u.Email == email);
+        var user = _context.Users.FirstOrDefault(u => u.Email == email);
 
         //Check user
         if (user == null)
@@ -105,6 +112,7 @@ public class UserService
 
             return Convert.ToBase64String(hash);
         }
+
     private string NormalizeEmail(string email)
     {
         return email.Trim().ToLowerInvariant();
