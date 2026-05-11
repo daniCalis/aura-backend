@@ -59,7 +59,6 @@ public class UsersController : ControllerBase
     [HttpGet("me")]
     public IActionResult GetMe()
     {
-        // This endpoint is protected by the [Authorize] attribute, which means that only authenticated users can access it.
-        return Ok("Sei autenticato 🎉");
+        return Ok(new { message = "GetMe was successfull" });
     }
 }

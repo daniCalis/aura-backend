@@ -1,8 +1,9 @@
+using Aura.Api.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Scalar.AspNetCore;
 using System.Text;
-using Aura.Api.Data;
 
 // 🔥 This is the main entry point of the application. It sets up the web host, configures services, and defines the middleware pipeline.
 var builder = WebApplication.CreateBuilder(args);
@@ -40,29 +41,26 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 // Dependency Injection for UserService
 builder.Services.AddScoped<UserService>();
 
-// 📄 Swagger
+// OpenApi
 builder.Services.AddEndpointsApiExplorer();
 
-builder.Services.AddSwaggerGen();
-
+builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
 // 🔧 Pipeline, sequenza corretta degli middleware (sequenza che ogni richiesta HTTP deve attraversare)
-
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    app.MapOpenApi();
+    app.MapScalarApiReference();
 }
 
 app.UseHttpsRedirection();
 
-// 🔥 IMPORTANTISSIMO: ordine corretto
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Registra tutti i tuoi controllers
+// Mappa i controller alle rotte HTTP (es. /api/users)
 app.MapControllers();
 
 // Avvia il server web e inizia ad ascoltare le richieste HTTP
