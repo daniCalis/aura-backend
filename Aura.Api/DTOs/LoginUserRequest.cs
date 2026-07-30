@@ -10,5 +10,6 @@ public class LoginUserRequest
     public required string Email { get; set; }
 
     [Required]
+    // si potrebbe introdurre una Data Annotation anche per la lunghezza forse
     public required string Password { get; set; }
 }

@@ -34,6 +34,7 @@ public class UserService
         }
 
         //Hash password
+        // Valutare l'uso di soluzioni collaudate come Microsoft.AspNetCore.Identity.PasswordHasher<TUser> o una libreria per Argon2.
         var passwordHash = HashPassword(password);
 
         //Create user
@@ -113,6 +114,7 @@ public class UserService
             return Convert.ToBase64String(hash);
         }
 
+    // Valutare di usare: ASP.NET Core Identity usa un ILookupNormalizer (es. UpperInvariantLookupNormalizer) per normalizzare nomi/email quando usi Identity.
     private string NormalizeEmail(string email)
     {
         return email.Trim().ToLowerInvariant();

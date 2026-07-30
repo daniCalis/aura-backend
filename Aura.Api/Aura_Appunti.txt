@@ -1,0 +1,509 @@
+ASP.NET Core:
+
+ASP.NET Core è un framework di Microsoft per creare applicazioni web usando principalmente C# e fornisce una serie di strumenti per creare l'applicazione.
+
+
+
+
+
+
+
+Pipeline:
+
+La pipeline è la sequenza di passaggi che una richiesta HTTP attraversa all'interno dell'applicazione, passando attraverso vari componenti (middleware) prima di arrivare al codice che la gestisce e poi tornando al client con la risposta.
+
+Client (browser/app)
+        ↓
+   Middleware
+        ↓
+   Middleware
+        ↓
+   Controller (il tuo codice C#)
+        ↓
+   Database
+        ↓
+   Middleware
+        ↓
+Client (risposta HTTP)
+
+La pipeline è quindi il percorso che una richiesta fa dentro APS.NET Core, attraversando una serie di middleware, fino al codice che risponde e poi tornando indietro con la risposta.
+
+
+
+
+
+
+
+
+Middleware:
+
+Il middleware è un componente che si trova dentro la pipeline di APS.NET Core e fa una certa operazione, prima di passarla al componente successivo.
+
+Client (browser/app)
+  ↓
+Middleware HTTPS
+  ↓
+Middleware Logging
+  ↓
+Middleware Authentication
+  ↓
+Middleware Authorization
+  ↓
+Controller (il tuo codice)
+  ↓
+Risposta
+
+
+Authentication Middleware
+
+Controlla il JWT, se il tocket è valido passa la richiesta avanti
+In caso di errore nell'autenticazione, il controller non viene nemmeno eseguito.
+
+Il controller è la destinazione, prima bisogna passare dai vari middleware.
+
+In ASP.NET Core esistono:
+
+1) Middleware già integrati nel framework
+2) Middleware sviluppati da te
+3) Middleware di librerie esterne installate tramite NuGet
+
+1 --> 
+
+I middleware comuni sono già forniti da Microsoft.
+
+app.UseAuthentication();
+app.UseAuthorization();
+app.UseHttpsRedirection();
+app.UseStaticFiles();
+
+In pratica non serve scrivere codice interno, vanno solo attivati all'interno della pipeline.
+
+
+2 -->
+
+Creo i middleware in una sezione dedicata, e poi li aggiungo
+
+app.UseMiddleware<MyMiddleware>();
+
+3 -->
+
+Puoi installare pacchetti NuGet che aggiungono middleware
+
+Swagger fa uso di middleware che crea la documentazione delle API
+
+e questi vanno configurati nella pipeline
+
+PS: Si potrebbe introdurre un Middleweare per la gestione delle eccezioni, al posto di implemetare i try catch in ogni controller
+
+
+
+
+Program:
+
+é il codice che configura l'applicazione.
+
+Creo il costruttore dell'applicazione.
+
+Creo la chiave usata per firmare e verificare i JWT.
+
+Imposto le varie configurazioni dentro l'istanza builder:
+
+Dico che l'app userà i controller.
+Dico che l'app usera JWT con quali specifiche
+Dico che il database sarà SQL Server
+Dico di creare un istanza della classe del servizio per ogni nuova richiesta HTTP
+Dico di creare una descrizione automatica delle API, che sarà poi riportata da Scalar
+
+Creo l'app.
+
+Definisco la pipeline, cioè la sequenza di middleware
+
+Dico che se reindirizza chiamate http in https
+Dico che si controlla l'utente
+Dico che si controlla l'autorizzazione dell'utente.
+Dico che collego gli URL ai Controller
+
+Faccio partire l'app.
+
+//Introdurre i vari concetti di Dependency Injection, tra cui Scoped, Singleton e Transient.
+
+
+
+
+DTOs:
+
+DTO significa Data Transfer Object, cioè è un oggetto per il trasferimeto dei dati.
+
+Serve per trasportare i dati tra il cient e il server oppure tra i diversi livelli dell'applicazione.
+
+Quando il frontend invia una richiesta HTTP e APS.NET Core deve convertire quel JSON in un oggetto C#.
+
+Lo fa creando un istanza della classe.
+
+L'oggetto verrà poi passato al controller.
+
+Al suo interno possiamo introdurre le Data Annotations, attiributi che ASP.NET usa per validare automaticamente i dati.
+[Required]
+[EmailAddress]
+Se questi criteri non sono rispettati ASP.NET restituirà automaticmanete 400 Bad Request, senza passare dal controller.
+
+
+
+
+Models:
+
+Rappresenta i dati come sono salvati nel database
+
+Il DTO rappresenta invece i dati che devono viaggiare nella richiesta o nella risposta HTTP.
+
+Le due cose si assomigliano ma non coincidono. Si vuole evitare che il client invii dati che non dovrebbe inviare come Id legati al db.
+
+La stessa cosa vale nella response.
+
+Magari tra l'altro il Database può cambiare che ne so aggiunta di una proprietà o rinomina, se non uso il DTOs devo modificare anche il front end per esempio
+
+La separazione rende l'applicazione più sicura, più facile da mantenere e meno dipendente dalla struttura interna del database.
+
+Inoltre ASP.NET ignora tutti i dati che vengono inviati dal client ma che non appartengono al DTO
+
+
+
+
+
+
+
+Controllers:
+
+Il Controller è il componente che riceve la richiesta HTTP.
+
+Il suo compito è:
+
+ricevere la richiesta HTTP;
+ricevere il DTO;
+chiamare il Service;
+restituire una risposta HTTP.
+
+Non dovrebbe contenere logica complessa.
+
+[ApiController] -> Dice che la classe è un controller e che deve essere gestita come tale da ASP.NET Core.
+[Route("api/[controller]")] -> Definisce l'URL che richiama il controller, in questo caso api/nomeController
+Il costruttore del controller riceve i servizi che gli servono, come il Service trasmesso tramite Dependency Injection.
+Il costruttore eredità da ControllerBase, che è la classe base per i controller API. Contiene metodi e proprietà utili per gestire le richieste e le risposte HTTP, tra cui metodi per restituire risposte con codici di stato HTTP, gestire i dati della richiesta e così via.
+Ok, BadRequest, NotFound...
+I metodi del controller vengono chiamati "action".
+
+public async Task<IActionResult> Register(RegisterUserRequest request) ->
+public perché deve essere accessibile dall'esterno così che il client può fare la richiesta HTTP.
+async perché il metodo contiene operazioni asincrone.
+Task<IActionResult> perché il metodo restituisce un oggetto IActionResult, che rappresenta la risposta HTTP, e Task perché è asincrono.
+Task è una promesso che restituirà un oggetto IActionResult in futuro, quando l'operazione asincrona sarà completata.
+Questo metodo non restituisce subito un IActionResult, ma restituirà un Task che quando finirà conterrà un IActionResult.
+Task è un tipo.
+async è una keyword.
+IActionResult è un'interfaccia che rappresenta il risultato di un'azione del controller, per esempio return Ok(), return BadRequest(), return NotFound()...
+
+
+await _userService.RegisterAsync(...)
+Il servizio viene chiamato dal controller in maniera asincrona, questo lavora sul database, il thread del controller non viene bloccato, quindi può gestire altre richieste mentre il servizio lavora sul database.
+Un servizio asincrono restituisce il tread al tread pool.
+L'asincronia è importante per la scalabilità dell'applicazione. La scalabilità è la capacità dell'applicazione di gestire un numero crescente di richieste senza degradare le prestazioni
+
+Il controller delega tutte le operazioni al servizio.
+
+[Authorize] -> Dice che per accedere a questo controller bisogna essere autenticati, altrimenti la richiesta non passa nemmeno dal controller. Tramite il middleware di autenticazione.
+
+
+
+
+
+Servicies:
+
+Un Service è una classe che contiene la logica di business dell'applicazione.
+
+In pratica:
+
+il Controller gestisce HTTP
+il DTO rappresenta i dati ricevuti
+il Service decide cosa deve succedere
+il Database Context parla con il database
+
+Il costruttore tramite Dependency Injection riceve il DbContext, che è la classe che rappresenta il database e permette di interagire con esso.
+
+La dependency injection è garantita da ASP.NET Core quando dichiariamo il servizio nel Program.cs.
+La dj permette
+
+AppDbContext
+      |
+      ↓
+ UserService
+      |
+      ↓
+UsersController
+
+I servizi sono asincroni.
+I servizi che restituiscono solo un Task non restituiscono nulla, ma solo un Task che indica che l'operazione è stata completata.
+Poi si fa una validazione dei dati ricevuti: questa è stata fatta tramite Data Annotations nel DTO, ma meglio fare una validazione anche nel servizio.
+--> L'applicazione magari può usare un altro controller oppure potrebbe essere chiamato da un altro servizio.
+
+if (_context.Users.Any(u => u.Email == email))
+
+_context è un istanza della classe AppDbContext, contiene le tabelle del database.
+Users è la tabella del database.
+_context.Users rappresenta la tabella, è una sua rappresentazione in C#.
+
+Entity Framework è un ORM (Object Relational Mapper), un oggetto che trasforma gi oggetti C# in query SQL e viceversa.
+
+Any genera automaticmanete una query SQL equivalente a SELECT * FROM Users WHERE Email = 'email' e restituisce true se esiste almeno un record che soddisfa la condizione, altrimenti false
+
+LINQ (Language Integrated Query) è un linguaggio per interrogare collezioni di oggetti in C#, per esempio: liste, array, dizionari, Entity Framework, XML ecc
+
+Where, Any, FirstOrDefault, Count, OrderBy sono metodi di LINQ.
+
+La lambda expression u => u.Email == email è un modo più conciso per scrivere una funzione.
+
+Uso di Entity Framework e LINQ per interrogare il database.
+Entity Framework è un ORM (Object Relational Mapper) che permette di interagire con il database usando oggetti C# invece di scrivere query SQL.
+LINQ (Language Integrated Query) è un linguaggio di query integrato in C# che permette di scrivere query in maniera simile a SQL, ma usando la sintassi del linguaggio C#.
+Users è la tabella del database che rappresenta gli utenti
+Any() è un metodo di LINQ che restituisce true se esiste almeno un record che soddisfa la condizione, altrimenti false
+u => u.Email == email è una lambda expression che rappresenta la condizione da verificare, cioè se esiste un utente con quell'email.
+
+PasswordHash è il risultato di una funzione criptografica che trasforma la password in una stringa di caratteri che non può essere decifratata.
+Lo scopo è non memorizzare mail la password in chiaro nel database, ma solo il suo hash che è difficile da invertire.
+
+Lambda Expression:
+
+Le lambda expression sono una caratteristica del linguaggio C#. Sono proprio sintassi del linguaggio.
+Principalmente vengono usate per rendere più conciso il codice, specialmente quando si lavora con collezioni di oggetti e LINQ.
+u => u.Email == email
+
+
+
+
+LINQ:
+
+LINQ è una libreria di .NET .
+
+LINQ (Language Integrated Query) è un linguaggio di query integrato in C# che permette di scrivere query in maniera simile a SQL, ma usando la sintassi del linguaggio C#.
+
+è costruita dalla classe System.Linq.Enumerable e System.Linq.Queryable. e contiene metodi come
+
+Any()
+Where()
+Select()
+First()
+Last()
+Count()
+OrderBy()
+
+Enumerable lavora su collezioni in memoria, come liste, array, dizionari ecc, mentre Queryable lavora su collezioni che rappresentano dati esterni, come database, XML ecc.
+Entrambe le classi contengono metodi di estensione, cioè metodi che possono essere chiamati su qualsiasi oggetto che implementa l'interfaccia IEnumerable o IQueryable, tra cui Any, ma sono implementati in maniera diversa per lavorare su collezioni in memoria.
+
+
+
+
+
+Entity Framework Code:
+
+//Cosa cambia tra il Code e il normale
+
+Entity Framework non fa parte del runtime base di .NET.
+
+È una libreria separata sviluppata da Microsoft.
+
+Va installata tramite NuGet.
+
+Entity Framework è un ORM (Object Relational Mapper), un oggetto che trasforma gi oggetti C# in query SQL e viceversa.
+
+La classe DbContext appartiene a Entity Framework.
+
+// _context.Users.Where(u => u.Email == email) vedere in futuro Expression Tree
+
+_context.Users.Add(user) -> Aggiunge un nuovo record alla tabella Users, ma non lo salva ancora nel database.
+è un metodo di DbSet<User>, registra l'oggetto user come nuovo record da inserire nella tabella Users, ma non la inserisce ancora nel database.
+
+await _context.SaveChangesAsync() -> è un metodo di DbContext. Salva le modifiche fatte al DbContext nel database, quindi inserisce il nuovo record nella tabella Users.
+
+
+
+
+
+
+AppDbContext:
+
+DbContext è una classe fornita da Entity Framework Core. Rappresenta una connessione tra l'applicazione e il database
+
+Quando uso _context.Users.Any(), non è che _context contiene gli utenti, ma è un oggetto che sa come andare nel database.
+
+Ma allora perchè esiste AppDbContext, non basta DbContext?
+
+Perchè DbContext è una classe generica, Microsoft non sa quali tabelle ci sono nel database, come si chiama il database, quali modelli ci sono ecc. 
+
+AppDbContext eredita tutto quello che sa fare da DbContext, ma aggiunge le informazioni specifiche dell'applicazione.
+
+Grazie all'eredità, AppDbContext possiede metodi e proprietà di DbContext tra cui:
+
+SaveChanges()
+SaveChangesAsync()
+Add()
+Remove()
+Update()
+Find()
+
+DbSet<T> rappresenta una tabella del database.
+
+Si chiama DbSet perché è un insieme ("set") di oggetti.
+
+Il costruttore
+
+        public AppDbContext(DbContextOptions<AppDbContext> options)
+            : base(options)
+        {
+        }
+
+Quando APS.NET Core crea il tuo AppDbContext, deve sapere:
+
+- quale database usare
+- la stringa di connesssione
+- se usare SQL Server.
+- se usare SQLLite.
+- altre configurazioni
+
+Tutte queste informazioni vengono raccolte dentro DbContextOptions<AppDbContext>, che è un oggetto di configurazione.
+
+Successivamente tramite base(options) passo queste informazioni al costruttore della classe base DbContext, che le userà per creare la connessione al database.
+
+Da dove arrivano queste options?
+
+Da Program.cs, quando dichiaro il servizio:
+
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    ));
+
+qui APS.NET Core costruisce un oggetto DbContextOptions<AppDbContext> con le informazioni necessarie per connettersi al database e lo passa al costruttore di AppDbContext.
+
+Scrivendo 
+
+_context.Users.Add(user);
+
+AppDbContext si limita a registrare questo oggetto come nuovo record da inserire nella tabella Users,
+
+_context.SaveChangesAsync();
+
+salva le modifiche fatte al DbContext nel database. In pratica esegue l'INSERT...
+
+In pratica:
+
+DbContext è la classe base di Entity Framework Core che gestisce la connessione al database, il tracciamento delle entità e l'esecuzione delle operazioni.
+AppDbContext è la tua implementazione personalizzata di DbContext, dove dichiari quali tabelle (tramite i DbSet) fanno parte del tuo database.
+DbSet<T> rappresenta una tabella del database e ti permette di costruire query e operazioni CRUD sui dati.
+SaveChanges() è il momento in cui tutte le modifiche registrate nel contesto vengono effettivamente tradotte in comandi SQL ed eseguite sul database.
+
+
+
+
+
+Migrations:
+
+Ti permette di mantenere sincronizzato il codice C# con il database, senza dover scrivere SQL a mano.
+
+Entity Framework Core Migrations è un sistema che permette di gestire le modifiche al database nel tempo, mantenendo la sincronizzazione tra il modello dei dati (le classi C#) e la struttura del database.
+
+Il concetto è il Database Migration, le modifiche alla struttura del database vengono gestite tramite codice e versionate nel tempo.
+
+EF Core Migrations implementa questo concetto attraverso la cartella Migrations e i comandi 
+
+dotnet ef migrations add NomeModifica
+dotnet ef database update
+
+Quindi si sfrutta il database migration pattern.
+
+Mettiamo per esempio di voler aggiungere una proprietà ad una tabella esistente.
+
+Il codice C# viene modificato, il database non ancora.
+
+Eseguendo il comando dotnet ef migrations add NomeModifica, EF Core confronta 
+
+Il modello precedente (le classi C#)
+e il modello attuale (le classi C# modificate)
+
+poi genera automaticamente il codice necessario per aggiornare il database.
+
+Ogni volta che creo una migration, compare un nuovo file
+
+Migrations
+│
+├── 20260729153200_InitialCreate.cs
+├── 20260729153200_InitialCreate.Designer.cs
+├── 20260730102015_AddEmail.cs
+├── 20260730102015_AddEmail.Designer.cs
+└── AppDbContextModelSnapshot.cs
+
+InitialCreate.cs è la migration vera e propria.
+Contiene due metodi Up() e Down() che definiscono le operazioni da eseguire per applicare o annullare la migration.
+I file Designer.cs contengono il codice generato automaticamente da EF Core, contengono una rappresentazione interna del modello usata da Entity Framework.
+Normalmente non li apri quasi mai.
+AppDbContextModelSnapshot.cs è importantissimo. Contiene una fotografia dell'ultima versione del database.
+Quando creo una nuova migration, EF Core confronta il modello attuale con lo snapshot precedente per determinare quali modifiche devono essere applicate al database.
+
+dotnet ef migrations add InitialCreate
+
+InitialCreate è il nome della migration, ma lo stabilisci tu. Anzi meglio usare nomi descrittivi.
+Questo però non effettua la modifica ma crea un piano di modifica
+
+dotnet ef database update
+
+effettua la modifica sul database
+
+Creo una migration per descrivere una modifica allo schema del database e poi applico la migration al database.
+Nel backend si ragiona spesso così.
+
+I comandi delle migration vengono eseguiti nel terminale, posizionandoti nella cartella del progetto che contiene il file .csproj di ASP.NET Core.
+
+Poitre aprire SQL Server Management Studio e aggiungere per esempio una colonna a mano:
+
+il problema è che
+
+il codice C# non saprebbe di quella modifica
+gli sviluppatori del team non la riceverebbero
+In produzione dovresti ricordarti di rifare manualmente tutte le modifiche.
+
+Con le migrations, le mofifiche al database diventano parte del codice del progetto.
+Basta condividere il codice tramite Git: chiunque scarichi il progetto può eseguire le stesse migrations e ottenere lo stesso schema del database
+
+
+
+
+Idee
+
+
+
+
+
+-------------------------------------
+
+Interfacce:
+
+Servicies:
+
+Migrations:
+
+Dependency Injection:
+
+Data e AppDbContext:
+
+ASP.NET Core Identity:
+
+Kestrel:
+
+Scoped, Singleton e Transient:
+
+Spiegami nel dettaglio come funzionano le applicazioni ASP.NET Core
+
+
+
+
+
+
+
